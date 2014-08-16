@@ -1,5 +1,8 @@
 #!/bin/bash
 
+cd "$(dirname "$0")"
+cd ..
+
 sudo service mongodb restart || (echo "Please install MongoDB beforehand" && exit 1)
 
 sudo apt-get install python-pip
@@ -18,4 +21,4 @@ if ! test -f config.json; then
     echo "Configure your login and password in config.json"
 fi
 echo "Add to your crontab the following line:"
-echo "0 9 * * * bash "$(pwd)"/run.sh"
+echo "0 9 * * * bash "$(pwd)"/bin/run.sh"

@@ -6,8 +6,8 @@ from random import random, shuffle
 from datetime import datetime
 from pymongo import MongoClient
 
-from metas import log, mystats, diffstats, find_profiles, metas_profile
-from mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile, get_good
+from lib.metas import log, mystats, diffstats, find_profiles, metas_profile
+from lib.mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile, get_good
 
 
 class Adopte(object):

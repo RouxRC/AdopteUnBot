@@ -60,6 +60,15 @@ class Adopte(object):
         sys.stdout.write("%s\n" % req.status_code)
         sys.stdout.flush()
 
+    # Login if necessary
+        if not self.logged():
+            if path.endswith("auth/login"):
+                log("Could not login", True)
+                return self.close(1)
+            else:
+                self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
+                return self.query(path, args)
+
     # Update todo list of new profiles
         oldtodo = dict(self.todo)
         find_profiles(self.page, self.done, self.todo)
@@ -87,13 +96,8 @@ class Adopte(object):
     def run(self):
         log("Start new session with %s profiles in pile (already %s done including %s active)" % (len(self.todo), len(self.done), self.nbgood))
 
-    # Go to home and login if necessary
+    # Go to home
         self.query("home")
-        if not self.logged():
-            self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
-        if not self.logged():
-            log("Could not login", True)
-            self.close(1)
 
     # Visit search queries to find new profiles
         for query in self.config["queries"]:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys, json, time, requests
+import sys, json, time, requests, signal
 from random import random, shuffle
 from datetime import datetime
 from pymongo import MongoClient
@@ -113,6 +113,11 @@ if __name__ == '__main__':
         exit(1)
 
     ad = Adopte(config)
+    def terminater(signum, frame):
+        print "[INFO] SIGTERM caught"
+        ad.close()
+    signal.signal(signal.SIGTERM, terminater)
+
     try:
         while True:
             ad.run()

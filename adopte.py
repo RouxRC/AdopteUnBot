@@ -6,18 +6,8 @@ from random import random, shuffle
 from datetime import datetime
 from pymongo import MongoClient
 
-from metas import mystats, diffstats, find_profiles, metas_profile
+from metas import log, mystats, diffstats, find_profiles, metas_profile
 from mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile, get_good
-
-
-def log(msg, error=False):
-    now = datetime.isoformat(datetime.today())[:19]
-    if error:
-        sys.stderr.write("[%s - ERROR] %s\n" % (now, msg.encode("utf-8")))
-        sys.stderr.flush()
-    else:
-        sys.stdout.write("[%s - INFO] %s\n" % (now, msg.encode("utf-8")))
-        sys.stdout.flush()
 
 
 class Adopte(object):

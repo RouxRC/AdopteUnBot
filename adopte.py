@@ -80,7 +80,8 @@ class Adopte(object):
     def logged(self):
         return "var myPseudo" in self.page
 
-    def home(self):
+    def run(self):
+    # Go to home and login if necessary
         self.query("home")
         if not self.logged():
             self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
@@ -88,11 +89,11 @@ class Adopte(object):
             sys.stderr.write("[ERROR] Could not login\n")
             self.close(1)
 
-    def search(self):
+    # Visit search queries to find new profiles
         for query in self.config["queries"]:
             self.query("gogole?q=%s" % query)
 
-    def profiles(self):
+    # Visit new profiles
         print "[INFO] Starting to visit %s new profiles" % len(self.todo)
         pids = self.todo.keys()
         shuffle(pids)
@@ -114,9 +115,7 @@ if __name__ == '__main__':
     ad = Adopte(config)
     try:
         while True:
-            ad.home()
-            ad.search()
-            ad.profiles()
+            ad.run()
     except KeyboardInterrupt:
         print("\n[INFO] Manually stopped, saving status...")
     except Exception as e:

@@ -63,6 +63,4 @@ def find_profiles(text, done, todo):
     for p in set(re_profiles.findall(text)):
         if p not in done and p not in todo:
             todo[p] = True
-    return todo
-
 

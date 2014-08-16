@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import sys, json, time, requests
-from datetime import datetime
 from pymongo import MongoClient
 from metas import mystats, diffstats, find_profiles
+from mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile
 
 class Adopte(object):
 
@@ -12,16 +12,11 @@ class Adopte(object):
         self.config = config
         self.url = None
         self.page = None
-        self.done = {}
-        self.todo = {}
-        self.db = MongoClient()['adopteunbot']
 
-        try:
-            self.laststats = self.db["stats"].find(sort=[("_id", -1)])[0]
-            del(self.laststats["_id"])
-            del(self.laststats["timestamp"])
-        except:
-            self.laststats = {}
+        self.db = MongoClient()['adopteunbot']
+        self.laststats = get_stats(self.db)
+        self.todo = get_todo(self.db)
+        self.done = get_done(self.db)
 
         self.session = requests.Session()
         self.options = {
@@ -33,6 +28,9 @@ class Adopte(object):
         }
 
         self.start()
+
+    def close(self):
+        save_todo(self.db, self.todo)
 
     def set_url(self, path):
         if not path.startswith("http"):
@@ -53,7 +51,7 @@ class Adopte(object):
         self.page = req.text
 
         oldtodo = dict(self.todo)
-        self.todo = find_profiles(self.page, self.done, self.todo)
+        find_profiles(self.page, self.done, self.todo)
         if oldtodo != self.todo:
             print "[INFO] Found %s new profiles to visit (%s total left)" % (len(self.todo) - len(oldtodo), len(self.todo))
 
@@ -83,13 +81,10 @@ class Adopte(object):
     def stats(self):
         stats = mystats(self.page)
         if stats != self.laststats:
-            print "[INFO] Stats update:"
+            print "[INFO] Stats update"
             if self.laststats:
                 diffstats(self.laststats, stats)
-            dbstats = dict(stats)
-            dbstats["timestamp"] = datetime.isoformat(datetime.today())
-            self.db["stats"].insert(dbstats)
-            self.laststats = dict(stats)
+            self.laststats = save_stats(self.db, stats)
 
 if __name__ == '__main__':
     try:

@@ -60,20 +60,13 @@ class Adopte(object):
         sys.stdout.write("%s\n" % req.status_code)
         sys.stdout.flush()
 
-    # Login if necessary
-        if not self.logged():
-            if path.endswith("auth/login"):
-                log("Could not login", True)
-                return self.close(1)
-            else:
-                self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
-                return self.query(path, args)
-
     # Update todo list of new profiles
         oldtodo = dict(self.todo)
         find_profiles(self.page, self.done, self.todo)
         if oldtodo != self.todo:
             log("Found %s new profiles to visit (%s total left)" % (len(self.todo) - len(oldtodo), len(self.todo)))
+
+        time.sleep(2+8*random())
 
     # Update personal stats
         if self.logged():
@@ -86,9 +79,15 @@ class Adopte(object):
                 if self.laststats:
                     diffstats(self.laststats, stats)
                 self.laststats = save_stats(self.db, stats)
-
-        time.sleep(2+8*random())
-        return req
+            return req
+    # Login if necessary
+        else:
+            if path.endswith("auth/login"):
+                log("Could not login", True)
+                return self.close(1)
+            else:
+                self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
+                return self.query(path, args)
 
     def logged(self):
         return "var myPseudo" in self.page

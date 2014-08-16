@@ -42,7 +42,7 @@ difflog = lambda k,s1,s2: "[INFO] - %s :\t%s\t->\t%s" % (k, s1, s2)
 def diffstats(s1, s2, key=""):
     if s1 == s2:
         pass
-    elif s1 is dict:
+    elif type(s1) == dict:
         for k in set(s1.keys()+s2.keys()):
             if k not in s1:
                 print difflog(k, "_", s2[k])
@@ -50,7 +50,7 @@ def diffstats(s1, s2, key=""):
                 print difflog(k, s1[k], "_")
             else:
                 diffstats(s1[k], s2[k], k)
-    elif s1 is list:
+    elif type(s1) == list:
         for i in range(max(len(s1), len(s2))):
             if i > len(s1)-1:
                 print difflog(key, "_", s2[i])
@@ -72,7 +72,7 @@ re_hashtags = re.compile(r'href="(?:http://www.adopteunmec.com)?/?gogole\?q=%23(
 def metas_profile(text):
     prof = {"actif": True}
     text = clean_text(text.encode('iso-8859-15', errors='ignore').decode('utf-8', errors='ignore'))
-    if "Cet utilisateur n'existe pas" in text:
+    if "Cet utilisateur n'existe pas" in text or u"Ce profil a été bloqué par" in text:
         return {"actif": False}
     if "Taux de pop" in text:
         prof["popularite_%"] = int(re.search(r"Taux de pop\s*<span>\s*(\d)+\s*%\s*</span>", text).group(1))
@@ -117,7 +117,4 @@ def metas_profile(text):
         prof["shoppinglist"] = re.search(r'Shopping List</span></h2>.*?<p>\s*(.*?)\s*</p>', text).group(1)
         if "pas encore fini de remplir son profil" in prof["shoppinglist"]:
             prof["shoppinglist"] = u"non renseigné"
-    for k in prof.keys():
-        if prof[k] is unicode:
-            prof[k] = prof[k].encode('utf-8')
     return prof

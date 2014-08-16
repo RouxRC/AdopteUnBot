@@ -1,5 +1,6 @@
 {
   "user": "",
   "pass": "",
-  "queries": []
+  "queries": [],
+  "debug": false
 }

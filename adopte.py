@@ -24,6 +24,7 @@ class Adopte(object):
 
     def __init__(self, config):
         self.config = config
+        self.debug = "debug" in config and config["debug"]
         self.page = None
 
         self.db = MongoClient()['adopteunbot']
@@ -77,8 +78,9 @@ class Adopte(object):
 
     # Update personal stats
         if self.logged():
-            with open("test.html", "w") as f:
-                f.write(self.page.encode('utf-8'))
+            if self.debug:
+                with open("test.html", "w") as f:
+                    f.write(self.page.encode('utf-8'))
             stats = mystats(self.page)
             if stats != self.laststats:
                 log("Stats update")

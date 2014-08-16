@@ -27,24 +27,35 @@ def mystats(text):
         stats["panier"] = int(re.search(r"<span class='nb-products'>(\d+)</span>", text).group(1))
     if "Il me reste " in text:
         stats["charmes"] = int(re.search(r"Il me reste (\d+) charme", text).group(1))
+    for var in ["Visites", "Mails", "Panier"]:
+        key = "total_%s" % var.lower().rstrip("s")
+        if '<span class="type">%s</span>' % var in text:
+            stats[key] = int(re.search(r'<span class="type">%s</span>.*?<span class="nb">(\d+)</span>' % var, text).group(1))
     if '<p id="ma-popu">' in text:
         stats["score"] = int(re.sub(r'\D', '', re.search(r'<p id="ma-popu">.*?<span>(.*?)</span>', text).group(1)))
     return stats
 
+difflog = lambda k,s1,s2: "[INFO] - %s :\t%s\t->\t%s" % (k, s1, s2)
 def diffstats(s1, s2, key=""):
     if s1 == s2:
         pass
     elif type(s1) == dict:
-        for k in s1.keys():
-            diffstats(s1[k], s2[k], k)
+        for k in set(s1.keys()+s2.keys()):
+            if k not in s1:
+                print difflog(k, "_", s2[k])
+            elif k not in s2:
+                print difflog(k, s1[k], "_")
+            else:
+                diffstats(s1[k], s2[k], k)
     elif type(s1) == list:
         for i in range(max(len(s1), len(s2))):
             if i > len(s1)-1:
-                print "[INFO] - %s: _ -> %s" % (key, s2[i])
+                print difflog(key, "_", s2[i])
             elif i > len(s2)-1:
-                print "[INFO] - %s: %s -> _" % (key, s1[i])
+                print difflog(key, s1[i], "_")
             else:
                 diffstats(s1[i], s2[i], key)
     else:
-        print "[INFO] - %s: %s -> %s" % (key, s1, s2)
+        print difflog(key, s1, s2)
+
 

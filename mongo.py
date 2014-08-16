@@ -31,7 +31,12 @@ def get_todo(db):
 
 def save_todo(db, todo):
     for pid in todo.keys():
-        db["profiles"].update({"_id": pid}, {"_id": pid, "todo": True}, upsert=True)
+        prof = {
+          "_id": pid,
+          "todo": True,
+          "timestamp": datetime.isoformat(datetime.today())
+        }
+        db["profiles"].update({"_id": pid}, prof, upsert=True)
 
 
 def get_done(db):
@@ -40,9 +45,13 @@ def get_done(db):
         done[t['_id']] = True
     return done
 
+def get_good(db):
+    return db["profiles"].find({"todo": False, "actif": True}).count()
+
+
 def save_profile(db, profile, pid):
     profile["_id"] = pid
     profile["todo"] = False
+    profile["timestamp"] = datetime.isoformat(datetime.today())
     db["profiles"].update({"_id": pid}, profile)
-    pass
 

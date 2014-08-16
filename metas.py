@@ -39,7 +39,7 @@ difflog = lambda k,s1,s2: "[INFO] - %s :\t%s\t->\t%s" % (k, s1, s2)
 def diffstats(s1, s2, key=""):
     if s1 == s2:
         pass
-    elif type(s1) == dict:
+    elif s1 is dict:
         for k in set(s1.keys()+s2.keys()):
             if k not in s1:
                 print difflog(k, "_", s2[k])
@@ -47,7 +47,7 @@ def diffstats(s1, s2, key=""):
                 print difflog(k, s1[k], "_")
             else:
                 diffstats(s1[k], s2[k], k)
-    elif type(s1) == list:
+    elif s1 is list:
         for i in range(max(len(s1), len(s2))):
             if i > len(s1)-1:
                 print difflog(key, "_", s2[i])

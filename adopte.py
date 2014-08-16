@@ -7,7 +7,17 @@ from datetime import datetime
 from pymongo import MongoClient
 
 from metas import mystats, diffstats, find_profiles, metas_profile
-from mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile
+from mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile, get_good
+
+
+def log(msg, error=False):
+    now = datetime.isoformat(datetime.today())[:19]
+    if error:
+        sys.stderr.write("[%s - ERROR] %s\n" % (now, msg.encode("utf-8")))
+        sys.stderr.flush()
+    else:
+        sys.stdout.write("[%s - INFO] %s\n" % (now, msg.encode("utf-8")))
+        sys.stdout.flush()
 
 
 class Adopte(object):
@@ -20,6 +30,7 @@ class Adopte(object):
         self.laststats = get_stats(self.db)
         self.todo = get_todo(self.db)
         self.done = get_done(self.db)
+        self.nbgood = get_good(self.db)
 
         self.session = requests.Session()
         self.options = {
@@ -33,20 +44,20 @@ class Adopte(object):
     def close(self, sig=0):
         save_todo(self.db, self.todo)
         if not sig:
-            print "[INFO] Stopping now"
+            log("Stopping now with %s profiles left in pile (already %s done including %s active)" % (len(self.todo), len(self.done), self.nbgood))
         exit(sig)
 
     def query(self, path, args=None):
     # Check hour for paying closedown
         now = datetime.today()
         if now.hour > 17 or (now.hour == 17 and now.minute > 55):
-            print "[INFO] Time to close down is up, see you tomorrow!"
+            log("Time to close down is up, see you tomorrow!")
             self.close()
 
     # Set URL
         if not path.startswith("http"):
             path = "http://www.adopteunmec.com/%s" % path.lstrip('/')
-        sys.stdout.write("[INFO] Query %s ... " % path)
+        sys.stdout.write("[%s - INFO] Query %s ... " % (datetime.isoformat(now)[:19], path))
         sys.stdout.flush()
 
     # Do query
@@ -56,12 +67,13 @@ class Adopte(object):
             req = self.session.get(path, **self.options)
         self.page = req.text
         sys.stdout.write("%s\n" % req.status_code)
+        sys.stdout.flush()
 
     # Update todo list of new profiles
         oldtodo = dict(self.todo)
         find_profiles(self.page, self.done, self.todo)
         if oldtodo != self.todo:
-            print "[INFO] Found %s new profiles to visit (%s total left)" % (len(self.todo) - len(oldtodo), len(self.todo))
+            log("Found %s new profiles to visit (%s total left)" % (len(self.todo) - len(oldtodo), len(self.todo)))
 
     # Update personal stats
         if self.logged():
@@ -69,7 +81,7 @@ class Adopte(object):
                 f.write(self.page.encode('utf-8'))
             stats = mystats(self.page)
             if stats != self.laststats:
-                print "[INFO] Stats update"
+                log("Stats update")
                 if self.laststats:
                     diffstats(self.laststats, stats)
                 self.laststats = save_stats(self.db, stats)
@@ -81,12 +93,14 @@ class Adopte(object):
         return "var myPseudo" in self.page
 
     def run(self):
+        log("Start new session with %s profiles in pile (already %s done including %s active)" % (len(self.todo), len(self.done), self.nbgood))
+
     # Go to home and login if necessary
         self.query("home")
         if not self.logged():
             self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
         if not self.logged():
-            sys.stderr.write("[ERROR] Could not login\n")
+            log("Could not login", True)
             self.close(1)
 
     # Visit search queries to find new profiles
@@ -94,7 +108,7 @@ class Adopte(object):
             self.query("gogole?q=%s" % query)
 
     # Visit new profiles
-        print "[INFO] Starting to visit %s new profiles" % len(self.todo)
+        log("Starting to visit %s new profiles" % len(self.todo))
         pids = self.todo.keys()
         shuffle(pids)
         for pid in self.todo.keys():
@@ -103,18 +117,23 @@ class Adopte(object):
             save_profile(self.db, prof, pid)
             del(self.todo[pid])
             self.done[pid] = True
+            if prof["actif"]:
+                self.nbgood += 1
 
 if __name__ == '__main__':
     try:
         with open("config.json") as f:
             config = json.load(f)
+        assert("user" in config and config["user"] and type(config["user"]) == unicode)
+        assert("pass" in config and config["pass"] and type(config["pass"]) == unicode)
+        assert("queries" in config and type(config["queries"]) == list)
     except:
-        sys.stderr.write("[ERROR] Could not load config.json\n")
+        log("Could not load config.json", True)
         exit(1)
 
     ad = Adopte(config)
     def terminater(signum, frame):
-        print "[INFO] SIGTERM caught"
+        log("SIGTERM caught")
         ad.close()
     signal.signal(signal.SIGTERM, terminater)
 
@@ -122,9 +141,10 @@ if __name__ == '__main__':
         while True:
             ad.run()
     except KeyboardInterrupt:
-        print("\n[INFO] Manually stopped, saving status...")
+        print("\n")
+        log("Manually stopped, saving status...")
     except Exception as e:
-        sys.stderr.write("[ERROR] Crashed: %s %s\n" % (type(e), e))
+        log("Crashed: %s %s" % (type(e), e), True)
         ad.close(1)
     ad.close()
 

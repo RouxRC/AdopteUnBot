@@ -2,7 +2,9 @@
 
 cd "$(dirname "$0")"
 
-sleep $((RANDOM % 5000))
+if [ -z "$1" ]; then
+  sleep $((RANDOM % 5000))
+fi
 source $(which virtualenvwrapper.sh)
 workon adopte
 pkill -f "python adopte.py"

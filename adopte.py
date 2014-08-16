@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import sys, json, time, requests
+from random import random, shuffle
 from pymongo import MongoClient
-from metas import mystats, diffstats, find_profiles
+
+from metas import mystats, diffstats, find_profiles, metas_profile
 from mongo import get_stats, save_stats, get_todo, save_todo, get_done, save_profile
+
 
 class Adopte(object):
 
@@ -26,12 +29,11 @@ class Adopte(object):
             "verify": False
         }
 
-        self.start()
-
-    def close(self):
+    def close(self, sig=0):
         save_todo(self.db, self.todo)
-        print "[INFO] Stopping now"
-        exit(0)
+        if not sig:
+            print "[INFO] Stopping now"
+        exit(sig)
 
     def query(self, path, args=None):
 #TODO: add check hour and exit
@@ -66,31 +68,34 @@ class Adopte(object):
                     diffstats(self.laststats, stats)
                 self.laststats = save_stats(self.db, stats)
 
-        time.sleep(2)
+        time.sleep(2+8*random())
         return req
 
     def logged(self):
         return "var myPseudo" in self.page
 
-    def search(self, query):
-        return self.query("gogole?q=%s" % query)
-
-    def profile(self, pid):
-        req = self.query("profile/%s" % pid)
-        # metas = get_profile_metas(self.page)
-        # save_profilte(self.db, metas)
-        return req
-
-    def start(self):
+    def home(self):
         self.query("home")
         if not self.logged():
             self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
         if not self.logged():
-            sys.stderr.write("[ERROR] Could not login")
-        else:
-            for q in self.config["queries"]:
-                self.search(q)
-        self.close()
+            sys.stderr.write("[ERROR] Could not login\n")
+            self.close(1)
+
+    def search(self):
+        for query in self.config["queries"]:
+            self.query("gogole?q=%s" % query)
+
+    def profiles(self):
+        print "[INFO] Starting to visit %s new profiles" % len(self.todo)
+        pids = self.todo.keys()
+        shuffle(pids)
+        for pid in self.todo.keys():
+            req = self.query("profile/%s" % pid)
+            prof = metas_profile(self.page)
+            save_profile(self.db, prof, pid)
+            del(self.todo[pid])
+            self.done[pid] = True
 
 if __name__ == '__main__':
     try:
@@ -101,4 +106,15 @@ if __name__ == '__main__':
         exit(1)
 
     ad = Adopte(config)
+    try:
+        while True:
+            ad.home()
+            ad.search()
+            ad.profiles()
+    except KeyboardInterrupt:
+        print("\n[INFO] Manually stopped, saving status...")
+    except Exception as e:
+        sys.stderr.write("[ERROR] Crashed: %s %s\n" % (type(e), e))
+        ad.close(1)
+    ad.close()
 

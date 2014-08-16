@@ -24,15 +24,25 @@ def save_stats(db, stats):
 
 
 def get_todo(db):
-    return {}
+    todo = {}
+    for t in db["profiles"].find({"todo": True}, fields=['_id']):
+        todo[t['_id']] = True
+    return todo
 
 def save_todo(db, todo):
-    pass
+    for pid in todo.keys():
+        db["profiles"].update({"_id": pid}, {"_id": pid, "todo": True}, upsert=True)
 
 
 def get_done(db):
-    return {}
+    done = {}
+    for t in db["profiles"].find({"todo": False}, fields=['_id']):
+        done[t['_id']] = True
+    return done
 
-def save_profile(db, done):
+def save_profile(db, profile, pid):
+    profile["_id"] = pid
+    profile["todo"] = False
+    db["profiles"].update({"_id": pid}, profile)
     pass
 

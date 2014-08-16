@@ -64,3 +64,6 @@ def find_profiles(text, done, todo):
         if p not in done and p not in todo:
             todo[p] = True
 
+def metas_profile(text):
+    prof = {}
+    return prof

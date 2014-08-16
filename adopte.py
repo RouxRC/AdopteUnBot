@@ -10,7 +10,6 @@ class Adopte(object):
 
     def __init__(self, config):
         self.config = config
-        self.url = None
         self.page = None
 
         self.db = MongoClient()['adopteunbot']
@@ -31,60 +30,65 @@ class Adopte(object):
 
     def close(self):
         save_todo(self.db, self.todo)
-
-    def set_url(self, path):
-        if not path.startswith("http"):
-            path = "http://www.adopteunmec.com/%s" % path.lstrip('/')
-        self.url = path
-        return path
+        exit(0)
 
     def query(self, path, args=None):
-        self.set_url(path)
-        sys.stdout.write("[INFO] Query %s... " % self.url)
+#TODO: add check hour and exit
+    # Set URL
+        if not path.startswith("http"):
+            path = "http://www.adopteunmec.com/%s" % path.lstrip('/')
+        sys.stdout.write("[INFO] Query %s... " % path)
 
+    # Do query
         if args:
-            req = self.session.post(self.url, data=args, **self.options)
+            req = self.session.post(path, data=args, **self.options)
         else:
-            req = self.session.get(self.url, **self.options)
+            req = self.session.get(path, **self.options)
+        self.page = req.text
         sys.stdout.write("%s\n" % req.status_code)
 
-        self.page = req.text
-
+    # Update todo list of new profiles
         oldtodo = dict(self.todo)
         find_profiles(self.page, self.done, self.todo)
         if oldtodo != self.todo:
             print "[INFO] Found %s new profiles to visit (%s total left)" % (len(self.todo) - len(oldtodo), len(self.todo))
 
+    # Update personal stats
         if self.logged():
-            self.stats()
+            with open("test.html", "w") as f:
+                f.write(self.page.encode('utf-8'))
+            stats = mystats(self.page)
+            if stats != self.laststats:
+                print "[INFO] Stats update"
+                if self.laststats:
+                    diffstats(self.laststats, stats)
+                self.laststats = save_stats(self.db, stats)
 
         time.sleep(2)
         return req
 
-    def login(self):
-        return self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
-
     def logged(self):
         return "var myPseudo" in self.page
-
-    def start(self):
-        self.query("home")
-        if not self.logged():
-            self.login()
-        if not self.logged():
-            sys.stderr.write("[ERROR] Could not login")
-            exit(1)
 
     def search(self, query):
         return self.query("gogole?q=%s" % query)
 
-    def stats(self):
-        stats = mystats(self.page)
-        if stats != self.laststats:
-            print "[INFO] Stats update"
-            if self.laststats:
-                diffstats(self.laststats, stats)
-            self.laststats = save_stats(self.db, stats)
+    def profile(self, pid):
+        req = self.query("profile/%s" % pid)
+        # metas = get_profile_metas(self.page)
+        # save_profilte(self.db, metas)
+        return req
+
+    def start(self):
+        self.query("home")
+        if not self.logged():
+            self.query("auth/login", {"username": self.config["user"], "password": self.config["pass"], "remember": "on"})
+        if not self.logged():
+            sys.stderr.write("[ERROR] Could not login")
+        else:
+            for q in self.config["queries"]:
+                self.search(q)
+        self.close()
 
 if __name__ == '__main__':
     try:

@@ -30,6 +30,7 @@ class Adopte(object):
 
     def close(self):
         save_todo(self.db, self.todo)
+        print "[INFO] Stopping now"
         exit(0)
 
     def query(self, path, args=None):
@@ -37,7 +38,8 @@ class Adopte(object):
     # Set URL
         if not path.startswith("http"):
             path = "http://www.adopteunmec.com/%s" % path.lstrip('/')
-        sys.stdout.write("[INFO] Query %s... " % path)
+        sys.stdout.write("[INFO] Query %s ... " % path)
+        sys.stdout.flush()
 
     # Do query
         if args:

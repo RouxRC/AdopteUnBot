@@ -3,6 +3,7 @@
 
 import sys, json, time, requests
 from random import random, shuffle
+from datetime import datetime
 from pymongo import MongoClient
 
 from metas import mystats, diffstats, find_profiles, metas_profile
@@ -36,7 +37,12 @@ class Adopte(object):
         exit(sig)
 
     def query(self, path, args=None):
-#TODO: add check hour and exit
+    # Check hour for paying closedown
+        now = datetime.today()
+        if now.hour > 17 or (now.hour == 17 and now.minute > 55):
+            print "[INFO] Time to close down is up, see you tomorrow!"
+            self.close()
+
     # Set URL
         if not path.startswith("http"):
             path = "http://www.adopteunmec.com/%s" % path.lstrip('/')

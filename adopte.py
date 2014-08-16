@@ -31,6 +31,11 @@ class Adopte(object):
             "allow_redirects": True,
             "verify": False
         }
+        signal.signal(signal.SIGTERM, self.terminater)
+
+    def terminater(self, signum, frame=""):
+        log("SIGTERM caught")
+        self.close()
 
     def close(self, sig=0):
         save_todo(self.db, self.todo)
@@ -115,6 +120,18 @@ class Adopte(object):
             if prof["actif"]:
                 self.nbgood += 1
 
+    def runner(self):
+        try:
+            while self.todo:
+                self.run()
+        except KeyboardInterrupt:
+            print("\n")
+            log("Manually stopped, saving status...")
+        except Exception as e:
+            log("Crashed: %s %s" % (type(e), e), True)
+            self.close(1)
+        self.close()
+
 if __name__ == '__main__':
     try:
         with open("config.json") as f:
@@ -127,19 +144,5 @@ if __name__ == '__main__':
         exit(1)
 
     ad = Adopte(config)
-    def terminater(signum, frame):
-        log("SIGTERM caught")
-        ad.close()
-    signal.signal(signal.SIGTERM, terminater)
-
-    try:
-        while True:
-            ad.run()
-    except KeyboardInterrupt:
-        print("\n")
-        log("Manually stopped, saving status...")
-    except Exception as e:
-        log("Crashed: %s %s" % (type(e), e), True)
-        ad.close(1)
-    ad.close()
+    ad.runner()
 

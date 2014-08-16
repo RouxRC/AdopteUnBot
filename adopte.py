@@ -4,14 +4,16 @@
 import sys, json, time, requests
 from datetime import datetime
 from pymongo import MongoClient
-from metas import mystats, diffstats
+from metas import mystats, diffstats, find_profiles
 
 class Adopte(object):
 
     def __init__(self, config):
         self.config = config
-        self.page = None
         self.url = None
+        self.page = None
+        self.done = {}
+        self.todo = {}
         self.db = MongoClient()['adopteunbot']
 
         try:
@@ -49,6 +51,12 @@ class Adopte(object):
         sys.stdout.write("%s\n" % req.status_code)
 
         self.page = req.text
+
+        oldtodo = dict(self.todo)
+        self.todo = find_profiles(self.page, self.done, self.todo)
+        if oldtodo != self.todo:
+            print "[INFO] Found %s new profiles to visit (%s total left)" % (len(self.todo) - len(oldtodo), len(self.todo))
+
         if self.logged():
             self.stats()
 

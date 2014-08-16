@@ -58,4 +58,11 @@ def diffstats(s1, s2, key=""):
     else:
         print difflog(key, s1, s2)
 
+re_profiles = re.compile(r'(?:"id"\s*:\s*"|href="(?:http://www.adopteunmec.com)?/?profile/)(\d+)"')
+def find_profiles(text, done, todo):
+    for p in set(re_profiles.findall(text)):
+        if p not in done and p not in todo:
+            todo[p] = True
+    return todo
+
 
